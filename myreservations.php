@@ -294,20 +294,32 @@ $reservations = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
                 $display_time = "Full Day (22H)";
             } else {
                 $display_time = (!empty($time_val) && $time_val != '00:00:00') ? date("g:i A", strtotime($time_val)) : '02:00 PM';
-            }
-        ?>
+</div>
         <div class="booking-item">
-            <div>
-                <div class="booking-date">
-                    <div class="booking-item">
-                        <div>
-                            <div class="booking-date">
-                                <?= date("M d, Y", strtotime($row['date'])) ?>
-                            </div>
-                            <div class="booking-details">
-                                ⏰ <span><?= $display_time ?></span> 
-                                <br>
-                                💳 <span><?= htmlspecialchars($row['payment_type'] ?? 'Cash', ENT_QUOTES, 'UTF-8') ?></span>
+            <div class="booking-date">
+                <span><?php echo date("M d, Y", strtotime($row['date'])); ?></span>
+            </div>
+            <div class="booking-details">
+                <span><?php echo $display_time; ?></span>
+                <br>
+                <span><?php echo htmlspecialchars($row['payment_type'] ?? 'Cash', ENT_QUOTES, 'UTF-8'); ?></span>
+            </div>
+            <div style="text-align: right;">
+                <div class="status-badge status-<?php echo $row['status']; ?>" style="margin-bottom: 12px;">
+                    <?php echo str_replace('_', ' ', $row['status']); ?>
+                </div>
+                <?php if ($row['status'] === 'confirmed' || $row['status'] === 'pending'): ?>
+                    <a href="confirmation.php?id=<?php echo $row['id']; ?>" class="ticket-link">View Ticket</a>
+                <?php endif; ?>
+                <?php if ($row['status'] === 'pending' || $row['status'] === 'confirmed'): ?>
+                    <a href="cancel_request.php?id=<?php echo $row['id']; ?>" 
+                       class="cancel-link" 
+                       onclick="return confirm('Are you sure you want to request a cancellation for this stay?')">Request Cancel</a>
+                <?php elseif ($row['status'] === 'pending_cancel'): ?>
+                    <span style="color: var(--text-sub); font-size: 0.75rem; display: block; font-style: italic;">Awaiting Admin...</span>
+                <?php endif; ?>
+            </div>
+        </div>
                             </div>
                         </div>
                         <div style="text-align: right;">
