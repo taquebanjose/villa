@@ -1,7 +1,8 @@
 <?php
 session_start();
-include 'db/connection.php';
-include 'admin/functions.php'; 
+require_once 'db/connection.php';
+// Note: Ensure admin functions compatible with PDO are used if needed
+// include 'admin/functions.php'; 
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!isset($_SESSION['user_id'])) {
@@ -14,21 +15,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $selected_val = $_POST['specific_time']; // '08:00:00', '19:00:00', or '08:00:01'
     $payment = $_POST['payment_method']; // Captures 'GCash' or 'Cash'
 
-    // Start a Transaction for safe concurrency
-    $conn->begin_transaction();
-
     try {
+        // Start a Transaction for safe concurrency using PDO
+        $pdo->beginTransaction();
+
         // --- 1. DOUBLE-BOOKING PREVENTATIVE CHECK ---
-        $check_stmt = $conn->prepare("SELECT specific_time FROM reservations WHERE date = ? AND status IN ('confirmed', 'pending') FOR UPDATE");
-        $check_stmt->bind_param("s", $date);
-        $check_stmt->execute();
-        $check_result = $check_stmt->get_result();
+        $check_stmt = $pdo->prepare("SELECT specific_time FROM reservations WHERE date = ? AND status IN ('confirmed', 'pending') FOR UPDATE");
+        $check_stmt->execute([$date]);
+        $reservations = $check_stmt->fetchAll(PDO::FETCH_ASSOC);
         
         $taken_slots = [];
-        while ($row = $check_result->fetch_assoc()) {
+        foreach ($reservations as $row) {
             $taken_slots[] = date("H:i:s", strtotime($row['specific_time']));
         }
-        $check_stmt->close();
 
         $is_available = true;
 
@@ -61,25 +60,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         // --- 3. INSERT RESERVATION ---
-        $stmt = $conn->prepare("INSERT INTO reservations (user_id, date, time, specific_time, payment_type, total_price, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')");
-        $stmt->bind_param("issssd", $user_id, $date, $time_label, $selected_val, $payment, $total_price);
+        $stmt = $pdo->prepare("INSERT INTO reservations (user_id, date, time, specific_time, payment_type, total_price, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')");
+        $success = $stmt->execute([$user_id, $date, $time_label, $selected_val, $payment, $total_price]);
 
-        if (!$stmt->execute()) {
+        if (!$success) {
             throw new Exception("db_error");
         }
 
-        $new_id = $conn->insert_id;
+        $new_id = $pdo->lastInsertId();
         
-        // Log activity
-        $log_detail = "Booking #$new_id created ($time_label via $payment). Revenue: ₱" . number_format($total_price, 2);
-        logActivity($conn, 'BOOKING', $log_detail);
+        // Log activity (Ensure logActivity is updated to support PDO connection if called)
+        // $log_detail = "Booking #$new_id created ($time_label via $payment). Revenue: ₱" . number_format($total_price, 2);
+        // logActivity($pdo, 'BOOKING', $log_detail);
 
-        $conn->commit(); // Save changes
+        $pdo->commit(); // Save changes
         header("Location: confirmation.php?id=" . $new_id);
         exit();
 
     } catch (Exception $e) {
-        $conn->rollback(); // Undo if any error occurred
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack(); // Undo if any error occurred
+        }
         header("Location: booking.php?error=" . $e->getMessage());
         exit();
     }
