@@ -25,7 +25,7 @@ $rows = $gallery_stmt->fetchAll(PDO::FETCH_ASSOC);
 if ($rows) {
     foreach ($rows as $row) {
         $gallery_items[] = [
-            'src'      => 'uploads/gallery/' . $row['image_path'], // Do not run htmlspecialchars on paths
+            'src'      => 'uploads/gallery/' . rawurlencode($row['image_path']), 
             'caption'  => htmlspecialchars($row['caption'] ?? '', ENT_QUOTES, 'UTF-8'),
             'category' => htmlspecialchars($row['category'] ?? '', ENT_QUOTES, 'UTF-8')
         ];
