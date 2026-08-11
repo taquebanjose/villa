@@ -17,6 +17,7 @@ $user_res = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
 $userName = !empty($user_res['name']) ? explode(' ', $user_res['name'])[0] : 'Guest';
 $user_image = !empty($user_res['image']) ? 'uploads/' . $user_res['image'] : null;
+
 // 2. Fetch User's Reservations (Ordering by newest date first)
 $query = "SELECT * FROM reservations WHERE user_id = ? ORDER BY date DESC, time DESC";
 $stmt_res = $pdo->prepare($query);
@@ -281,45 +282,30 @@ $reservations = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
         <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 35px;">Keep track of your luxury visits.</p>
 
         <div class="bookings-list">
-<?php if (count($reservations) > 0): ?>
-    <?php foreach ($reservations as $row): ?>
-        <?php
-            $time_val = $row['time'];
-            $display_time = "";
-            if ($time_val == "08:00:00") {
-                $display_time = "Day Session (8 AM)";
-            } elseif ($time_val == "19:00:00") {
-                $display_time = "Night Session (7 PM)";
-            } elseif ($time_val == "08:00:01") {
-                $display_time = "Full Day (22H)";
-            } else {
-                $display_time = (!empty($time_val) && $time_val != '00:00:00') ? date("g:i A", strtotime($time_val)) : '02:00 PM';
-</div>
-        <div class="booking-item">
-            <div class="booking-date">
-                <span><?php echo date("M d, Y", strtotime($row['date'])); ?></span>
-            </div>
-            <div class="booking-details">
-                <span><?php echo $display_time; ?></span>
-                <br>
-                <span><?php echo htmlspecialchars($row['payment_type'] ?? 'Cash', ENT_QUOTES, 'UTF-8'); ?></span>
-            </div>
-            <div style="text-align: right;">
-                <div class="status-badge status-<?php echo $row['status']; ?>" style="margin-bottom: 12px;">
-                    <?php echo str_replace('_', ' ', $row['status']); ?>
-                </div>
-                <?php if ($row['status'] === 'confirmed' || $row['status'] === 'pending'): ?>
-                    <a href="confirmation.php?id=<?php echo $row['id']; ?>" class="ticket-link">View Ticket</a>
-                <?php endif; ?>
-                <?php if ($row['status'] === 'pending' || $row['status'] === 'confirmed'): ?>
-                    <a href="cancel_request.php?id=<?php echo $row['id']; ?>" 
-                       class="cancel-link" 
-                       onclick="return confirm('Are you sure you want to request a cancellation for this stay?')">Request Cancel</a>
-                <?php elseif ($row['status'] === 'pending_cancel'): ?>
-                    <span style="color: var(--text-sub); font-size: 0.75rem; display: block; font-style: italic;">Awaiting Admin...</span>
-                <?php endif; ?>
-            </div>
-        </div>
+            <?php if (count($reservations) > 0): ?>
+                <?php foreach ($reservations as $row): ?>
+                    <?php
+                        $time_val = $row['time'];
+                        $display_time = "";
+                        if ($time_val == "08:00:00") {
+                            $display_time = "Day Session (8 AM)";
+                        } elseif ($time_val == "19:00:00") {
+                            $display_time = "Night Session (7 PM)";
+                        } elseif ($time_val == "08:00:01") {
+                            $display_time = "Full Day (22H)";
+                        } else {
+                            $display_time = (!empty($time_val) && $time_val != '00:00:00') ? date("g:i A", strtotime($time_val)) : '02:00 PM';
+                        }
+                    ?>
+                    <div class="booking-item">
+                        <div>
+                            <div class="booking-date">
+                                <span><?php echo date("M d, Y", strtotime($row['date'])); ?></span>
+                            </div>
+                            <div class="booking-details">
+                                <span><?php echo $display_time; ?></span>
+                                <br>
+                                <span><?php echo htmlspecialchars($row['payment_type'] ?? 'Cash', ENT_QUOTES, 'UTF-8'); ?></span>
                             </div>
                         </div>
                         <div style="text-align: right;">
