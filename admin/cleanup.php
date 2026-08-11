@@ -11,15 +11,18 @@ $today = date('Y-m-d');
 
 // Logic: Archive everything that has passed OR is already cancelled
 // This keeps the "Active Reservations" list focused only on upcoming stays
-$query = "UPDATE reservations SET is_archived = 1 WHERE date < ? OR status = 'cancelled'";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("s", $today);
-
-if ($stmt->execute()) {
-    logActivity($conn, 'CLEANUP', "System moved past/cancelled bookings to archive.");
-    $stmt->close(); // Clean up the statement
-    header("Location: dashboard.php?msg=cleanup_done");
-} else {
+try {
+    $query = "UPDATE reservations SET is_archived = 1 WHERE date < ? OR status = 'cancelled'";
+    $stmt = $pdo->prepare($query);
+    
+    if ($stmt->execute([$today])) {
+        // Pass $pdo if logActivity expects a database connection, or adjust based on your functions.php
+        logActivity($pdo, 'CLEANUP', "System moved past/cancelled bookings to archive.");
+        header("Location: dashboard.php?msg=cleanup_done");
+    } else {
+        header("Location: dashboard.php?msg=error");
+    }
+} catch (PDOException $e) {
     header("Location: dashboard.php?msg=error");
 }
 exit();
