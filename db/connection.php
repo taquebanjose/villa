@@ -2,11 +2,11 @@
 $db_url = getenv('DATABASE_URL');
 $dbparts = parse_url($db_url);
 
-$host = $dbparts['host'];
-$port = $dbparts['port'];
-$user = $dbparts['user'];
-$password = $dbparts['pass'];
-$dbname = ltrim($dbparts['path'], '/');
+$host = $dbparts['host'] ?? 'localhost';
+$port = $dbparts['port'] ?? '5432';
+$user = $dbparts['user'] ?? '';
+$password = $dbparts['pass'] ?? '';
+$dbname = ltrim($dbparts['path'] ?? '', '/');
 
 try {
     $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";

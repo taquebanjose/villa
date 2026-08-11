@@ -1,7 +1,8 @@
 FROM php:8.2-apache
 
-# Install extensions needed for MySQL connection (mysqli)
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+# Install dependencies and extensions needed for both MySQL and PostgreSQL (pdo_pgsql)
+RUN apt-get update && apt-get install -y libpq-dev \
+    && docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql pgsql
 
 # Copy project files into the Apache public directory
 COPY . /var/www/html/
