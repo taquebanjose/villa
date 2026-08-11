@@ -10,11 +10,10 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// 2. Fetch Latest User Data
-$stmt = $conn->prepare("SELECT name, email, image, role FROM users WHERE id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$user = $stmt->get_result()->fetch_assoc();
+// 2. Fetch Latest User Data (Using PDO)
+$stmt = $pdo->prepare("SELECT name, email, image, role FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $userName = !empty($user['name']) ? $user['name'] : 'Guest';
 $displayName = explode(' ', $userName)[0];
