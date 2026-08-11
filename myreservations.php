@@ -11,20 +11,17 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 // --- FETCH USER IMAGE & NAME ---
-$stmt_user = $conn->prepare("SELECT name, image FROM users WHERE id = ?");
-$stmt_user->bind_param("i", $user_id);
-$stmt_user->execute();
-$user_res = $stmt_user->get_result()->fetch_assoc();
+$stmt_user = $pdo->prepare("SELECT name, image FROM users WHERE id = ?");
+$stmt_user->execute([$user_id]);
+$user_res = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
 $userName = !empty($user_res['name']) ? explode(' ', $user_res['name'])[0] : 'Guest';
 $user_image = !empty($user_res['image']) ? 'uploads/' . $user_res['image'] : null;
-
 // 2. Fetch User's Reservations (Ordering by newest date first)
 $query = "SELECT * FROM reservations WHERE user_id = ? ORDER BY date DESC, time DESC";
-$stmt_res = $conn->prepare($query);
-$stmt_res->bind_param("i", $user_id);
-$stmt_res->execute();
-$reservations = $stmt_res->get_result();
+$stmt_res = $pdo->prepare($query);
+$stmt_res->execute([$user_id]);
+$reservations = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
