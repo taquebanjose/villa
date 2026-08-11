@@ -1,6 +1,6 @@
 <?php
 // 1. Include the PDO database connection
-require_once 'db.php';
+require_once 'db/connection.php';
 
 // 2. Fetch existing active reservations to filter calendar availability
 $booked_slots = [];
