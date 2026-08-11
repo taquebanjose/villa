@@ -73,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // $log_detail = "Booking #$new_id created ($time_label via $payment). Revenue: ₱" . number_format($total_price, 2);
         // logActivity($pdo, 'BOOKING', $log_detail);
 
-        $pdo->commit(); // Save changes
+$pdo->commit(); // Save changes
         header("Location: confirmation.php?id=" . $new_id);
         exit();
 
