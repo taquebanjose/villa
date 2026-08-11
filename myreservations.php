@@ -281,21 +281,24 @@ $reservations = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
         <p style="color: var(--text-sub); font-size: 0.85rem; margin-bottom: 35px;">Keep track of your luxury visits.</p>
 
         <div class="bookings-list">
-            <?php if ($reservations->num_rows > 0): ?>
-                <?php while($row = $reservations->fetch_assoc()): ?>
-                    <?php 
-                        $time_val = $row['time'];
-                        $display_time = "";
-                        if ($time_val == "08:00:00") {
-                            $display_time = "Day Session (8 AM)";
-                        } elseif ($time_val == "19:00:00") {
-                            $display_time = "Night Session (7 PM)";
-                        } elseif ($time_val == "08:00:01") {
-                            $display_time = "Full Day (22H)";
-                        } else {
-                            $display_time = (!empty($time_val) && $time_val != '00:00:00') ? date("g:i A", strtotime($time_val)) : '02:00 PM';
-                        }
-                    ?>
+<?php if (count($reservations) > 0): ?>
+    <?php foreach ($reservations as $row): ?>
+        <?php
+            $time_val = $row['time'];
+            $display_time = "";
+            if ($time_val == "08:00:00") {
+                $display_time = "Day Session (8 AM)";
+            } elseif ($time_val == "19:00:00") {
+                $display_time = "Night Session (7 PM)";
+            } elseif ($time_val == "08:00:01") {
+                $display_time = "Full Day (22H)";
+            } else {
+                $display_time = (!empty($time_val) && $time_val != '00:00:00') ? date("g:i A", strtotime($time_val)) : '02:00 PM';
+            }
+        ?>
+        <div class="booking-item">
+            <div>
+                <div class="booking-date">
                     <div class="booking-item">
                         <div>
                             <div class="booking-date">
@@ -325,7 +328,7 @@ $reservations = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
                             <?php endif; ?>
                         </div>
                     </div>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             <?php else: ?>
                 <div style="padding: 60px 20px; color: var(--text-sub);">
                     <p style="font-size: 1rem; font-weight: 500; margin: 0 0 10px 0;">No reservations found.</p>
