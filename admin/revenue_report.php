@@ -24,8 +24,9 @@ $stmt_total = $pdo->query("SELECT SUM(total_price) as total FROM reservations WH
 $total_res = $stmt_total->fetch(PDO::FETCH_ASSOC);
 $lifetime_revenue = $total_res['total'] ?? 0;
 
-$monthly_query = "SELECT MONTHNAME(date) as month, SUM(total_price) as revenue FROM reservations WHERE status = 'confirmed' AND YEAR(date) = YEAR(CURDATE()) GROUP BY MONTH(date) ORDER BY MONTH(date)";
-$monthly_results = $pdo->query($monthly_query);
+$monthly_query = "SELECT TO_CHAR(date, 'FMMonth') as month, SUM(total_price) as revenue FROM reservations WHERE status = 'confirmed' AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM CURRENT_DATE) GROUP BY TO_CHAR(date, 'FMMonth'), EXTRACT(MONTH FROM date) ORDER BY EXTRACT(MONTH FROM date)";
+$monthly_results = $pdo->query($monthly_query); // <-- This line executes the query!
+
 $months = []; $revenues = [];
 while($row = $monthly_results->fetch(PDO::FETCH_ASSOC)) { 
     $months[] = $row['month']; 
