@@ -12,30 +12,30 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 $user_id = $_SESSION['user_id'];
 
 // --- FETCH ADMIN DATA (For the Dropdown) ---
-$stmt_admin = $conn->prepare("SELECT name, image FROM users WHERE id = ?");
-$stmt_admin->bind_param("i", $user_id);
-$stmt_admin->execute();
-$admin_data = $stmt_admin->get_result()->fetch_assoc();
+$stmt_admin = $pdo->prepare("SELECT name, image FROM users WHERE id = ?");
+$stmt_admin->execute([$user_id]);
+$admin_data = $stmt_admin->fetch(PDO::FETCH_ASSOC);
 
 $displayName = !empty($admin_data['name']) ? explode(' ', $admin_data['name'])[0] : 'Admin';
 $admin_image = !empty($admin_data['image']) ? '../uploads/' . $admin_data['image'] : null;
 
 // --- REVENUE LOGIC ---
-$total_res = $conn->query("SELECT SUM(total_price) as total FROM reservations WHERE status = 'confirmed'")->fetch_assoc();
+$stmt_total = $pdo->query("SELECT SUM(total_price) as total FROM reservations WHERE status = 'confirmed'");
+$total_res = $stmt_total->fetch(PDO::FETCH_ASSOC);
 $lifetime_revenue = $total_res['total'] ?? 0;
 
 $monthly_query = "SELECT MONTHNAME(date) as month, SUM(total_price) as revenue FROM reservations WHERE status = 'confirmed' AND YEAR(date) = YEAR(CURDATE()) GROUP BY MONTH(date) ORDER BY MONTH(date)";
-$monthly_results = $conn->query($monthly_query);
+$monthly_results = $pdo->query($monthly_query);
 $months = []; $revenues = [];
-while($row = $monthly_results->fetch_assoc()) { 
+while($row = $monthly_results->fetch(PDO::FETCH_ASSOC)) { 
     $months[] = $row['month']; 
     $revenues[] = (float)$row['revenue']; 
 }
 
 $session_query = "SELECT time, COUNT(*) as count FROM reservations WHERE status = 'confirmed' GROUP BY time";
-$session_results = $conn->query($session_query);
+$session_results = $pdo->query($session_query);
 $session_labels = []; $session_counts = [];
-while($row = $session_results->fetch_assoc()) {
+while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
     $label = ($row['time'] == "08:00:00") ? "☀️ Day" : (($row['time'] == "19:00:00") ? "🌙 Night" : "⏳ 22h");
     $session_labels[] = $label; 
     $session_counts[] = $row['count'];
