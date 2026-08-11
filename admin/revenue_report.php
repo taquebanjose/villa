@@ -34,18 +34,20 @@ while($row = $monthly_results->fetch(PDO::FETCH_ASSOC)) {
     $revenues[] = (float)$row['revenue']; 
 }
 
-// Session breakdown query mapped reliably to Day, Night, and 22 Hours
+// Session breakdown query with distinct matching for Day, Night, and 22 Hours/Day & Night
 $session_query = "SELECT specific_time, COUNT(*) as count FROM reservations WHERE status = 'confirmed' GROUP BY specific_time";
 $session_results = $pdo->query($session_query);
 $session_labels = []; $session_counts = [];
 while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
     $time_val = strtolower(trim($row['specific_time'] ?? ''));
     
-    // Check for Day, Night, or fallback to 22 Hours
-    if (strpos($time_val, 'day') !== false || strpos($time_val, '08') !== false) {
-        $label = "☀️ Day";
-    } elseif (strpos($time_val, 'night') !== false || strpos($time_val, '19') !== false) {
+    // Check for 'night' first, then combination/22 hours, then standalone 'day'
+    if (strpos($time_val, 'night') !== false && strpos($time_val, 'day') === false) {
         $label = "🌙 Night";
+    } elseif (strpos($time_val, 'day') !== false && strpos($time_val, 'night') !== false) {
+        $label = "⏳ 22 Hours (Day & Night)";
+    } elseif (strpos($time_val, 'day') !== false) {
+        $label = "☀️ Day";
     } else {
         $label = "⏳ 22 Hours";
     }
