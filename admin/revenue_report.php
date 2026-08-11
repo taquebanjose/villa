@@ -34,20 +34,19 @@ while($row = $monthly_results->fetch(PDO::FETCH_ASSOC)) {
     $revenues[] = (float)$row['revenue']; 
 }
 
-// Updated to look at 'specific_time' column based on your database schema
+// Session breakdown query mapped to Day, Night, and 22 Hours
 $session_query = "SELECT specific_time, COUNT(*) as count FROM reservations WHERE status = 'confirmed' GROUP BY specific_time";
 $session_results = $pdo->query($session_query);
 $session_labels = []; $session_counts = [];
 while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
-    $time_val = $row['specific_time'] ?? 'N/A';
+    $time_val = strtolower(trim($row['specific_time'] ?? ''));
     
-    // Flexible matching for Day, Night, or other slots
-    if (stripos($time_val, 'day') !== false || strpos($time_val, '08') !== false) {
+    if (strpos($time_val, 'day') !== false) {
         $label = "☀️ Day";
-    } elseif (stripos($time_val, 'night') !== false || strpos($time_val, '19') !== false) {
+    } elseif (strpos($time_val, 'night') !== false) {
         $label = "🌙 Night";
     } else {
-        $label = "⏳ " . $time_val;
+        $label = "⏳ 22 Hours";
     }
     
     $session_labels[] = $label; 
@@ -328,16 +327,22 @@ while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
         }
         window.onclick = function(event) { if (!event.target.closest('.account-dropdown')) { closePremiumMenu(); } }
 
+        // Safely map PHP arrays to JS variables
+        const monthsData = <?php echo json_encode($months ?? []); ?>;
+        const revenuesData = <?php echo json_encode($revenues ?? []); ?>;
+        const sessionLabelsData = <?php echo json_encode($session_labels ?? []); ?>;
+        const sessionCountsData = <?php echo json_encode($session_counts ?? []); ?>;
+
         const revCtx = document.getElementById('revenueChart').getContext('2d');
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
         
         const revenueChart = new Chart(revCtx, {
             type: 'line',
             data: {
-                labels: <?= json_encode($months) ?>,
+                labels: monthsData,
                 datasets: [{
                     label: 'Revenue',
-                    data: <?= json_encode($revenues) ?>,
+                    data: revenuesData,
                     borderColor: '#d4af37',
                     backgroundColor: 'rgba(212, 175, 55, 0.1)',
                     fill: true,
@@ -357,9 +362,9 @@ while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
         new Chart(sessCtx, {
             type: 'doughnut',
             data: {
-                labels: <?= json_encode($session_labels) ?>,
+                labels: sessionLabelsData,
                 datasets: [{
-                    data: <?= json_encode($session_counts) ?>,
+                    data: sessionCountsData,
                     backgroundColor: ['#d4af37', '#8a7322', '#f3e5ab'],
                     borderWidth: 0
                 }]
