@@ -12,10 +12,9 @@ $user_id = $_SESSION['user_id'];
 
 // 2. Fetch User Data for Nav
 /** @var mysqli $conn */
-$stmt = $conn->prepare("SELECT name, image FROM users WHERE id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$user = $stmt->get_result()->fetch_assoc();
+$stmt = $pdo->prepare("SELECT name, image FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $userName = !empty($user['name']) ? $user['name'] : 'Guest';
 $displayName = explode(' ', $userName)[0];
