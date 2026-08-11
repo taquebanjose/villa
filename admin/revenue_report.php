@@ -34,11 +34,22 @@ while($row = $monthly_results->fetch(PDO::FETCH_ASSOC)) {
     $revenues[] = (float)$row['revenue']; 
 }
 
-$session_query = "SELECT time, COUNT(*) as count FROM reservations WHERE status = 'confirmed' GROUP BY time";
+// Updated to look at 'specific_time' column based on your database schema
+$session_query = "SELECT specific_time, COUNT(*) as count FROM reservations WHERE status = 'confirmed' GROUP BY specific_time";
 $session_results = $pdo->query($session_query);
 $session_labels = []; $session_counts = [];
 while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
-    $label = ($row['time'] == "08:00:00") ? "☀️ Day" : (($row['time'] == "19:00:00") ? "🌙 Night" : "⏳ 22h");
+    $time_val = $row['specific_time'] ?? 'N/A';
+    
+    // Flexible matching for Day, Night, or other slots
+    if (stripos($time_val, 'day') !== false || strpos($time_val, '08') !== false) {
+        $label = "☀️ Day";
+    } elseif (stripos($time_val, 'night') !== false || strpos($time_val, '19') !== false) {
+        $label = "🌙 Night";
+    } else {
+        $label = "⏳ " . $time_val;
+    }
+    
     $session_labels[] = $label; 
     $session_counts[] = $row['count'];
 }
