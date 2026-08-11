@@ -1,0 +1,692 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap");
+
+/* --- DYNAMIC THEME SYSTEM (CSS VARIABLES) --- */
+:root {
+  --bg-main: #f7f7f9;
+  --bg-overlay-1: rgba(247, 247, 249, 0.9);
+  --bg-overlay-2: rgba(240, 240, 243, 0.84);
+  --text-primary: #111111;
+  --text-secondary: #444444;
+  --text-muted: #666666;
+  --nav-bg: rgba(255, 255, 255, 0.85);
+  --card-bg: rgba(255, 255, 255, 0.65);
+  --card-border: rgba(255, 255, 255, 0.5);
+  --card-hover-bg: rgba(255, 255, 255, 0.95);
+  --input-bg: rgba(0, 0, 0, 0.02);
+  --input-border: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --shadow-main: rgba(0, 0, 0, 0.04);
+  --shadow-hover: rgba(0, 0, 0, 0.08);
+  --gold-primary: #d4af37;
+  --gold-text: #b8931d;
+  --table-bg: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] {
+  --bg-main: #0c0f14;
+  --bg-overlay-1: rgba(12, 15, 20, 0.92);
+  --bg-overlay-2: rgba(18, 22, 30, 0.88);
+  --text-primary: #f0f3f8;
+  --text-secondary: #b0b7c4;
+  --text-muted: #8a92a3;
+  --nav-bg: rgba(12, 15, 20, 0.85);
+  --card-bg: rgba(20, 26, 36, 0.7);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-hover-bg: rgba(28, 36, 48, 0.95);
+  --input-bg: rgba(255, 255, 255, 0.03);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --shadow-main: rgba(0, 0, 0, 0.5);
+  --shadow-hover: rgba(0, 0, 0, 0.6);
+  --gold-primary: #d4af37;
+  --gold-text: #e6c65c;
+  --table-bg: rgba(20, 26, 36, 0.5);
+}
+
+/* --- GLOBAL LAYOUT & RESET --- */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Montserrat", sans-serif !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+}
+
+/* Dynamic Luxury Background Image Overlay */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    linear-gradient(var(--bg-overlay-1), var(--bg-overlay-2)),
+    url("../images/bgresort.jpg") no-repeat center center / cover;
+  z-index: -1;
+  transition: background 0.4s ease;
+  pointer-events: none;
+}
+
+/* --- PREMIUM NAVIGATION BAR --- */
+.modern-nav {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: var(--nav-bg);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 1000;
+  padding: 12px 0;
+  transition:
+    background 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.nav-title {
+  font-family: "Cinzel", serif;
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  background: linear-gradient(45deg, var(--gold-text), var(--gold-primary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  cursor: pointer;
+  margin: 0;
+}
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+/* --- THEME TOGGLE BUTTON --- */
+.theme-toggle-btn {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(15px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--gold-primary) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--shadow-hover);
+}
+
+/* --- NAVIGATION BUBBLES & LINKS --- */
+.account-toggle,
+.nav-btn,
+.nav-btn-alt,
+.logout-btn {
+  padding: 8px 18px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* User Profile Bubble */
+.account-toggle {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+  cursor: pointer;
+}
+
+.account-toggle:hover {
+  transform: translateY(-2px);
+  background: rgba(212, 175, 55, 0.08) !important;
+  border-color: var(--gold-primary) !important;
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.15);
+}
+
+/* Primary Action Button ("Book Now") */
+.nav-btn {
+  background: linear-gradient(90deg, #d4af37 0%, #e5c158 100%) !important;
+  color: #ffffff !important;
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+  cursor: pointer;
+}
+
+.nav-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(212, 175, 55, 0.35);
+  filter: brightness(1.04);
+}
+
+/* Link Style */
+.nav-btn-alt,
+.nav-link-text {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.3s ease;
+}
+
+.nav-btn-alt:hover,
+.nav-link-text:hover {
+  color: var(--gold-text);
+}
+
+/* Logout Bubble */
+.logout-btn,
+.nav-buttons a[href="logout.php"] {
+  background: rgba(255, 59, 48, 0.08) !important;
+  border: 1px solid rgba(255, 59, 48, 0.25) !important;
+  color: #ff3b30 !important;
+  font-weight: 700;
+}
+
+.logout-btn:hover,
+.nav-buttons a[href="logout.php"]:hover {
+  background: #ff3b30 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(255, 59, 48, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Navigation Avatar Graphic */
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+}
+
+/* --- ACCOUNT DROPDOWN MENU --- */
+.account-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.account-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 140%;
+  background: var(--card-hover-bg);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  width: 230px;
+  padding: 12px;
+  box-shadow: 0 20px 50px var(--shadow-main);
+  z-index: 2000;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.account-menu.active,
+.account-menu.show {
+  display: flex !important;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.account-menu a {
+  display: block;
+  padding: 12px 18px;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.account-menu a:hover {
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold-text);
+  padding-left: 24px;
+}
+
+/* --- SIGNATURE GLASS CONTAINERS + CINEMATIC ENTRY --- */
+.hero-content,
+.container,
+.reservation-card,
+.management-card,
+.booking-card,
+.reserve-card {
+  background: var(--card-bg) !important;
+  backdrop-filter: blur(30px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(160%) !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 28px !important;
+  padding: 45px;
+  box-shadow: 0 25px 65px var(--shadow-main) !important;
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  margin: auto;
+  transition:
+    background 0.4s ease,
+    border-color 0.4s ease;
+
+  /* FLUID ENTRY ANIMATION RULE */
+  animation: luxuryFadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.container.wide {
+  max-width: 1100px;
+}
+
+/* Typography Overrides */
+.hero-content h1,
+.hero-content h2,
+.reserve-card h2,
+.container h2 {
+  font-family: "Cinzel", serif !important;
+  font-weight: 400 !important;
+  letter-spacing: 1px !important;
+  color: var(--text-primary) !important;
+  margin-top: 0;
+}
+
+.hero-content p {
+  color: var(--text-secondary) !important;
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+/* --- FORMS & LUXURY INPUTS --- */
+label {
+  display: block;
+  color: var(--gold-text) !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea,
+.modern-input {
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 14px;
+  color: var(--text-primary) !important;
+  outline: none;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: "Montserrat", sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+input:hover,
+select:hover,
+textarea:hover {
+  background: var(--card-hover-bg);
+  border-color: var(--gold-primary) !important;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+  transform: scale(1.01);
+}
+
+select option {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+}
+
+/* --- INTERACTIVE COLLECTION SELECTION CARDS --- */
+.option-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.option-item input[type="radio"] {
+  display: none;
+}
+
+.option-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg) !important;
+  backdrop-filter: blur(25px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(160%) !important;
+  border: 1px solid var(--card-border) !important;
+  padding: 24px 15px !important;
+  border-radius: 20px !important;
+  cursor: pointer;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  color: var(--text-primary) !important;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 30px var(--shadow-main) !important;
+  animation: none !important;
+}
+
+.option-label h3,
+.option-grid .option-item h3,
+.option-item h3,
+.crystal-waters-text {
+  color: var(--gold-text) !important;
+  font-family: "Montserrat", sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 1.05rem !important;
+  margin: 10px 0 6px 0 !important;
+  letter-spacing: 0.5px !important;
+}
+
+.option-label p,
+.option-grid .option-item p,
+.option-item p {
+  color: var(--text-muted) !important;
+  font-size: 0.8rem !important;
+  line-height: 1.45 !important;
+  margin: 0 !important;
+  padding: 0 8px !important;
+  font-weight: 400 !important;
+}
+
+.option-label span {
+  font-size: 1.8rem;
+  margin-bottom: 2px;
+}
+
+.option-label:hover {
+  background: var(--card-hover-bg) !important;
+  border-color: rgba(212, 175, 55, 0.5) !important;
+  transform: translateY(-4px) !important;
+  box-shadow: 0 15px 35px var(--shadow-hover) !important;
+}
+
+.option-item input[type="radio"]:checked + .option-label {
+  background: rgba(212, 175, 55, 0.08) !important;
+  border-color: var(--gold-primary) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.2) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* --- THE IMAGE COLLECTION SLIDER --- */
+.gallery-image,
+.slider-item img,
+.visual-experience-img {
+  border-radius: 20px !important;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 15px 35px var(--shadow-main);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gallery-image:hover {
+  transform: scale(1.02);
+}
+
+.visual-experience-tag,
+p.visual-tag {
+  color: var(--gold-text) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+}
+
+/* --- DYNAMIC TOTAL PRICE DISPLAY --- */
+#total-display {
+  background: rgba(212, 175, 55, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  border-radius: 20px;
+  padding: 22px;
+  margin-top: 30px;
+  text-align: center;
+  animation: fluidReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* --- FLAT PICKR (CALENDAR) OVERRIDES --- */
+.flatpickr-calendar {
+  background: var(--card-hover-bg) !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: 0 20px 50px var(--shadow-main) !important;
+  border-radius: 16px !important;
+  font-family: "Montserrat", sans-serif !important;
+}
+
+.flatpickr-months .flatpickr-month {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+  font-family: "Cinzel", serif !important;
+  font-weight: 600;
+}
+
+.flatpickr-weekday {
+  color: var(--gold-text) !important;
+  font-weight: 600 !important;
+}
+
+.flatpickr-day {
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease;
+}
+
+.flatpickr-day:hover {
+  background: rgba(212, 175, 55, 0.1) !important;
+  transform: scale(1.05);
+}
+
+.flatpickr-day.selected {
+  background: var(--gold-primary) !important;
+  border-color: var(--gold-primary) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.flatpickr-day.flatpickr-disabled {
+  color: var(--text-muted) !important;
+  opacity: 0.4;
+}
+
+/* --- LOG TABLES (MY RESERVATIONS / ADMIN) --- */
+.table-responsive {
+  overflow-x: auto;
+  margin-top: 25px;
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  background: var(--table-bg);
+}
+
+th {
+  padding: 18px 15px;
+  color: var(--gold-text);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+  background: var(--input-bg);
+}
+
+td {
+  padding: 16px 15px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.table-responsive tr:hover td {
+  background: var(--input-bg);
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+/* --- EXECUTIVE STATUS PILLS --- */
+.status-pill {
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+}
+
+.status-pill.confirmed {
+  background: rgba(0, 200, 83, 0.1);
+  color: #00c853;
+  border-color: rgba(0, 200, 83, 0.3);
+  box-shadow: 0 0 15px rgba(0, 200, 83, 0.1);
+}
+
+.status-pill.pending {
+  background: rgba(255, 160, 0, 0.1);
+  color: #ffa000;
+  border-color: rgba(255, 160, 0, 0.3);
+}
+
+.status-pill.pending_cancel {
+  background: rgba(211, 47, 47, 0.1);
+  color: #d32f2f;
+  border-color: rgba(211, 47, 47, 0.35);
+  animation: critical-pulse 2s infinite cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.status-pill.cancelled,
+.status-pill.archived {
+  background: var(--input-bg);
+  color: var(--text-muted);
+  border-color: var(--border-subtle);
+}
+
+/* --- STRUCTURE LAYOUT WRAPPERS --- */
+.hero-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 130px 20px 60px 20px;
+}
+
+/* --- MOBILE RESPONSIVE MEDIA QUERIES --- */
+@media (max-width: 768px) {
+  .nav-container {
+    padding: 0 15px;
+  }
+
+  .option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-content,
+  .container,
+  .reservation-card,
+  .management-card,
+  .booking-card,
+  .reserve-card {
+    padding: 25px 20px;
+  }
+
+  .nav-title {
+    font-size: 1.3rem;
+  }
+}
+
+/* --- MOTION PHYSICS KEYFRAMES --- */
+@keyframes luxuryFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fluidReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes critical-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.2);
+    border-color: rgba(211, 47, 47, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px 0 rgba(211, 47, 47, 0.1);
+    border-color: rgba(211, 47, 47, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.2);
+    border-color: rgba(211, 47, 47, 0.3);
+  }
+}
