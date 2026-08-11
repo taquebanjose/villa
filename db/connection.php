@@ -1,18 +1,18 @@
 <?php
-$host = '127.0.0.1'; // .
-$user = 'root';
-$pass = '';
-$dbname = 'villa_db';
-$port = 3306;
+$db_url = getenv('DATABASE_URL');
+$dbparts = parse_url($db_url);
 
-// Create connection
-$conn = new mysqli($host, $user, $pass, $dbname, $port);
+$host = $dbparts['host'];
+$port = $dbparts['port'];
+$user = $dbparts['user'];
+$password = $dbparts['pass'];
+$dbname = ltrim($dbparts['path'], '/');
 
-// Check connection
-if ($conn->connect_error) {
-    die("Database failed: " . $conn->connect_error);
+try {
+    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
+    $pdo = new PDO($dsn, $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
-
-$conn->set_charset("utf8mb4");
-date_default_timezone_set('Asia/Manila');
 ?>
