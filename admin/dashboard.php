@@ -12,10 +12,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 $user_id = $_SESSION['user_id'];
 
 // --- FETCH ADMIN DATA ---
-$stmt_admin = $conn->prepare("SELECT name, image FROM users WHERE id = ?");
-$stmt_admin->bind_param("i", $user_id);
-$stmt_admin->execute();
-$admin_data = $stmt_admin->get_result()->fetch_assoc();
+$stmt_admin = $pdo->prepare("SELECT name, image FROM users WHERE id = ?");
+$stmt_admin->execute([$user_id]);
+$admin_data = $stmt_admin->fetch(PDO::FETCH_ASSOC);
 
 $displayName = !empty($admin_data['name']) ? explode(' ', $admin_data['name'])[0] : 'Admin';
 $admin_image = !empty($admin_data['image']) ? '../uploads/' . $admin_data['image'] : null;
@@ -25,15 +24,15 @@ if (isset($_GET['action_id']) && isset($_GET['set_status'])) {
     $id = (int)$_GET['action_id'];
     $new_status = $_GET['set_status'];
     
-    $res = $conn->query("SELECT u.name FROM reservations r JOIN users u ON r.user_id = u.id WHERE r.id = $id");
-    $guest_name = ($res->num_rows > 0) ? $res->fetch_assoc()['name'] : "Unknown Guest";
+    $res_stmt = $pdo->prepare("SELECT u.name FROM reservations r JOIN users u ON r.user_id = u.id WHERE r.id = ?");
+    $res_stmt->execute([$id]);
+    $res_data = $res_stmt->fetch(PDO::FETCH_ASSOC);
+    $guest_name = $res_data ? $res_data['name'] : "Unknown Guest";
 
-    $stmt = $conn->prepare("UPDATE reservations SET status = ? WHERE id = ?");
-    $stmt->bind_param("si", $new_status, $id);
+    $stmt = $pdo->prepare("UPDATE reservations SET status = ? WHERE id = ?");
+    $stmt->execute([$new_status, $id]);
     
-    if ($stmt->execute()) {
-        logActivity($conn, 'STATUS_CHANGE', "Admin updated status to $new_status for guest: $guest_name");
-    }
+    logActivity($pdo, 'STATUS_CHANGE', "Admin updated status to $new_status for guest: $guest_name");
     
     header("Location: dashboard.php?msg=updated");
     exit();
@@ -43,11 +42,10 @@ if (isset($_GET['action_id']) && isset($_GET['set_status'])) {
 if (isset($_GET['confirm_id'])) {
     $id = (int)$_GET['confirm_id'];
     
-    $stmt = $conn->prepare("UPDATE reservations SET status = 'confirmed' WHERE id = ?");
-    $stmt->bind_param("i", $id);
+    $stmt = $pdo->prepare("UPDATE reservations SET status = 'confirmed' WHERE id = ?");
     
-    if ($stmt->execute()) {
-        logActivity($conn, 'BOOKING_CONFIRMED', "Admin confirmed reservation #$id");
+    if ($stmt->execute([$id])) {
+        logActivity($pdo, 'BOOKING_CONFIRMED', "Admin confirmed reservation #$id");
         header("Location: dashboard.php?msg=confirmed");
     } else {
         header("Location: dashboard.php?msg=error");
@@ -60,12 +58,11 @@ if (isset($_GET['archive_id'])) {
     $id = (int)$_GET['archive_id'];
     $new_state = (int)$_GET['state']; // 1 = archive, 0 = restore
     
-    $stmt = $conn->prepare("UPDATE reservations SET is_archived = ? WHERE id = ?");
-    $stmt->bind_param("ii", $new_state, $id);
+    $stmt = $pdo->prepare("UPDATE reservations SET is_archived = ? WHERE id = ?");
     
-    if ($stmt->execute()) {
+    if ($stmt->execute([$new_state, $id])) {
         $logMsg = ($new_state == 1) ? "Archived reservation #$id" : "Restored reservation #$id";
-        logActivity($conn, 'ARCHIVE_ACTION', $logMsg);
+        logActivity($pdo, 'ARCHIVE_ACTION', $logMsg);
     }
     
     $msg_type = ($new_state == 1) ? "archive_success" : "restore_success";
@@ -83,16 +80,18 @@ $archive_filter = ($current_view === 'archived') ? 1 : 0;
 $query = "SELECT r.id, u.name, r.date, r.time, r.status, r.is_archived 
           FROM reservations r 
           JOIN users u ON r.user_id = u.id 
-          WHERE r.is_archived = $archive_filter
+          WHERE r.is_archived = ? 
           ORDER BY (r.date = '$today') DESC, r.date DESC";
-$result = $conn->query($query);
+$stmt_res = $pdo->prepare($query);
+$stmt_res->execute([$archive_filter]);
+$reservations = $stmt_res->fetchAll(PDO::FETCH_ASSOC);
 
 // STATS
-$total_res = $conn->query("SELECT COUNT(*) as count FROM reservations WHERE is_archived = 0")->fetch_assoc()['count'];
-$pending = $conn->query("SELECT COUNT(*) as count FROM reservations WHERE status IN ('pending', 'pending_cancel') AND is_archived = 0")->fetch_assoc()['count'];
+$total_res = $pdo->query("SELECT COUNT(*) as count FROM reservations WHERE is_archived = 0")->fetch(PDO::FETCH_ASSOC)['count'];
+$pending = $pdo->query("SELECT COUNT(*) as count FROM reservations WHERE status IN ('pending', 'pending_cancel') AND is_archived = 0")->fetch(PDO::FETCH_ASSOC)['count'];
 
 // --- NEW REVENUE STAT (Quick View) ---
-$revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservations WHERE status = 'confirmed'")->fetch_assoc()['total'] ?? 0;
+$revenue_total = $pdo->query("SELECT SUM(total_price) as total FROM reservations WHERE status = 'confirmed'")->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -235,7 +234,6 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
         }
         .btn-gold:hover { background: var(--gold-text); transform: translateY(-3px); box-shadow: 0 10px 25px rgba(212, 175, 55, 0.35); }
 
-        /* Elegant Luxury Data Table Grid */
         .table-responsive { 
             background: var(--card-bg); 
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -251,7 +249,6 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
             border-bottom: 1px solid var(--border-subtle);
         }
 
-        /* Toast Alert System */
         #toast {
             visibility: hidden; min-width: 280px; background: var(--card-hover-bg);
             backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); color: var(--text-main); text-align: center; border-radius: 50px;
@@ -274,7 +271,6 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
                 Villa Marciana <span style="font-size: 0.75rem; color: var(--gold-text); font-family: sans-serif; vertical-align: middle; margin-left: 8px; letter-spacing: 2px; font-weight: 800;">ADMIN</span>
             </h1>
             <div class="nav-buttons" style="display: flex; align-items: center; gap: 12px;">
-                <!-- Theme Toggle Button -->
                 <button class="theme-toggle-btn" id="themeToggle" onclick="toggleTheme()">
                     <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
                 </button>
@@ -306,7 +302,6 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
     <main class="hero-wrapper" style="min-height:90vh; padding-top: 100px; box-sizing: border-box;">
         <div class="container wide" style="max-width: 1200px;">
             
-            <!-- Metric Display Grid -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px;">
                 <div class="stat-box">
                     <label>Active Bookings</label>
@@ -337,8 +332,8 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if ($result->num_rows > 0): ?>
-                                <?php while ($row = $result->fetch_assoc()): ?>
+                            <?php if (count($reservations) > 0): ?>
+                                <?php foreach ($reservations as $row): ?>
                                 <?php
                                     $time_val = $row['time'];
                                     $admin_display_time = "";
@@ -379,15 +374,15 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
                                         <?php endif; ?>
 
                                         <?php if ($row['is_archived'] == 0): ?>
-                                            <a href="javascript:void(0)" style="color: var(--text-sub); font-size: 0.75rem; font-weight: 700; text-decoration: none; margin-right: 12px; transition: color 0.2s;" onmouseover="this.style.color='var(--gold-accent)'" onmouseout="this.style.color='var(--text-sub)'" onclick="showModal('dashboard.php?archive_id=<?= $row['id'] ?>&state=1', '📁 Move to Archive', 'Hide this stay from active views?')">Archive</a>
+                                            <a href="javascript:void(0)" style="color: var(--text-sub); font-size: 0.75rem; font-weight: 700; text-decoration: none; margin-right: 12px;" onclick="showModal('dashboard.php?archive_id=<?= $row['id'] ?>&state=1', '📁 Move to Archive', 'Hide this stay from active views?')">Archive</a>
                                         <?php else: ?>
-                                            <a href="javascript:void(0)" style="color: var(--gold-accent); font-size: 0.75rem; font-weight: 700; text-decoration: none; margin-right: 12px; transition: color 0.2s;" onmouseover="this.style.color='var(--gold-text)'" onmouseout="this.style.color='var(--gold-accent)'" onclick="showModal('dashboard.php?archive_id=<?= $row['id'] ?>&state=0', '⏪ Restore Record', 'Bring this back to active dashboard?')">Restore</a>
+                                            <a href="javascript:void(0)" style="color: var(--gold-accent); font-size: 0.75rem; font-weight: 700; text-decoration: none; margin-right: 12px;" onclick="showModal('dashboard.php?archive_id=<?= $row['id'] ?>&state=0', '⏪ Restore Record', 'Bring this back to active dashboard?')">Restore</a>
                                         <?php endif; ?>
 
-                                        <a href="javascript:void(0)" style="color: #ff453a; font-size: 0.75rem; font-weight: 700; text-decoration: none; opacity: 0.6; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.6" onclick="showModal('remove.php?id=<?= $row['id'] ?>', '🗑️ Delete Entry', 'Permanently remove this booking?')">Delete</a>
+                                        <a href="javascript:void(0)" style="color: #ff453a; font-size: 0.75rem; font-weight: 700; text-decoration: none; opacity: 0.6;" onclick="showModal('remove.php?id=<?= $row['id'] ?>', '🗑️ Delete Entry', 'Permanently remove this booking?')">Delete</a>
                                     </td>
                                 </tr>
-                                <?php endwhile; ?>
+                                <?php endforeach; ?>
                             <?php else: ?>
                                 <tr><td colspan="4" style="text-align:center; padding: 60px; color:var(--text-sub); font-size:0.9rem;">No bookings found.</td></tr>
                             <?php endif; ?>
@@ -409,7 +404,7 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
                         <p style="color: var(--text-sub); font-size: 0.8rem; margin: 8px 0 20px; line-height: 1.4;">Keep the dashboard clean by moving past stays to the archive.</p>
                         <button class="btn-gold" onclick="showModal('cleanup.php', '🛡️ Run Archive Clean-up', 'Move all completed stays to the archive?')">Archive Past Dates</button>
                         
-                        <a href="dashboard.php?view=<?= $current_view === 'active' ? 'archived' : 'active' ?>" style="font-size: 0.82rem; color: var(--gold-text); text-decoration: none; font-weight: 700; display: block; margin-top: 10px; transition: color 0.2s;">
+                        <a href="dashboard.php?view=<?= $current_view === 'active' ? 'archived' : 'active' ?>" style="font-size: 0.82rem; color: var(--gold-text); text-decoration: none; font-weight: 700; display: block; margin-top: 10px;">
                             <?= $current_view === 'active' ? 'Open Archive Storage →' : '← Back to Active List' ?>
                         </a>
                     </div>
@@ -418,15 +413,14 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
         </div>
     </main>
 
-    <!-- Ultra-Centering Premium Action Modal -->
-    <div id="modernModal" class="modal-overlay" style="display: none; position: fixed !important; inset: 0 !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,0.6) !important; backdrop-filter: blur(15px) !important; -webkit-backdrop-filter: blur(15px) !important; z-index: 9999 !important;">
-        <div class="modal-content" style="position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; background: var(--modal-bg) !important; padding: 40px !important; border-radius: 32px !important; border: 1px solid rgba(212, 175, 55, 0.2) !important; width: 90% !important; max-width: 420px !important; text-align: center !important; box-shadow: 0 30px 70px var(--shadow-color) !important; margin: 0 !important; box-sizing: border-box !important;">
+    <div id="modernModal" class="modal-overlay" style="display: none; position: fixed !important; inset: 0 !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0,0,0,0.6) !important; backdrop-filter: blur(15px) !important; z-index: 9999 !important;">
+        <div class="modal-content" style="position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; background: var(--modal-bg) !important; padding: 40px !important; border-radius: 32px !important; border: 1px solid rgba(212, 175, 55, 0.2) !important; width: 90% !important; max-width: 420px !important; text-align: center !important; box-shadow: 0 30px 70px var(--shadow-color) !important;">
             <div id="modalIcon" style="font-size: 3.5rem; margin-bottom: 15px;">🛡️</div>
             <h3 id="modalTitle" style="color: var(--text-main); font-size: 1.5rem; margin-bottom: 10px; font-family: 'Cinzel', serif; font-weight: 400;">Confirm Action</h3>
             <p id="modalMessage" style="color: var(--text-sub); line-height: 1.6; margin-bottom: 30px; font-size: 0.95rem;"></p>
             <div style="display: flex; flex-direction: column; gap: 10px; align-items: center !important; justify-content: center !important; width: 100% !important;">
-                <a id="modalConfirmBtn" href="#" style="text-decoration:none !important; background: var(--gold-accent) !important; color: #0f0e0d !important; padding: 18px 0 !important; text-align: center !important; border-radius: 50px !important; margin: 0 auto !important; display: block !important; width: 100% !important; max-width: 100% !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 1px !important; box-shadow: 0 6px 20px rgba(212, 175, 55, 0.2) !important; box-sizing: border-box !important;">Execute Action</a>
-                <button onclick="closeModal()" style="background:transparent; border:none; color:var(--text-sub); cursor:pointer; font-weight: 700; padding: 10px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; width: 100%;">Cancel and Return</button>
+                <a id="modalConfirmBtn" href="#" style="text-decoration:none !important; background: var(--gold-accent) !important; color: #0f0e0d !important; padding: 18px 0 !important; text-align: center !important; border-radius: 50px !important; margin: 0 auto !important; display: block !important; width: 100% !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 1px !important;">Execute Action</a>
+                <button onclick="closeModal()" style="background:transparent; border:none; color:var(--text-sub); cursor:pointer; font-weight: 700; padding: 10px; font-size: 0.85rem; text-transform: uppercase; width: 100%;">Cancel and Return</button>
             </div>
         </div>
     </div>
@@ -434,14 +428,12 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
     <div id="toast">✅ Action Completed</div>
 
     <script>
-        // --- LIGHT / DARK MODE UI SYNC ---
         const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
         updateThemeUI(activeTheme);
 
         function toggleTheme() {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeUI(newTheme);
@@ -495,7 +487,6 @@ $revenue_total = $conn->query("SELECT SUM(total_price) as total FROM reservation
                 if (msg === 'archive_success') toast.innerText = "📁 Record moved to archive";
                 if (msg === 'restore_success') toast.innerText = "⏪ Record restored to active list";
                 if (msg === 'updated') toast.innerText = "✅ Status updated successfully";
-                if (msg === 'cleanup_done') toast.innerText = "🧹 Dashboard cleanup complete";
                 if (msg === 'error') {
                     toast.innerText = "❌ An error occurred";
                     toast.style.borderColor = "rgba(255, 69, 58, 0.4)";
