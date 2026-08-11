@@ -5,11 +5,9 @@ include 'db/connection.php';
 // Fetch User Data for Nav if logged in
 $user_name = "Guest";
 if (isset($_SESSION['user_id'])) {
-    /** @var mysqli $conn */
-    $stmt = $conn->prepare("SELECT name FROM users WHERE id = ?");
-    $stmt->bind_param("i", $_SESSION['user_id']);
-    $stmt->execute();
-    $user = $stmt->get_result()->fetch_assoc();
+    $stmt = $pdo->prepare("SELECT name FROM users WHERE id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($user && !empty($user['name'])) {
         $user_name = $user['name'];
     }
