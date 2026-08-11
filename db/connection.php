@@ -1,12 +1,9 @@
 <?php
-$db_url = getenv('DATABASE_URL');
-$dbparts = parse_url($db_url);
-
-$host = $dbparts['host'] ?? 'localhost';
-$port = $dbparts['port'] ?? '5432';
-$user = $dbparts['user'] ?? '';
-$password = $dbparts['pass'] ?? '';
-$dbname = ltrim($dbparts['path'] ?? '', '/');
+$host = 'dpg-d9tel0h42hec7381noug-a';
+$port = '5432';
+$dbname = 'villa_db_7x7e';
+$user = 'villa_db_7x7e_user';
+$password = 'Ok68wkiOIHU7cTbjO3i368QsNyH7oSrU';
 
 try {
     $dsn = "pgsql:host=$host;port=$port;dbname=$dbname";
