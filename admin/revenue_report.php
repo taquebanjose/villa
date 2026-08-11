@@ -24,8 +24,9 @@ $stmt_total = $pdo->query("SELECT SUM(total_price) as total FROM reservations WH
 $total_res = $stmt_total->fetch(PDO::FETCH_ASSOC);
 $lifetime_revenue = $total_res['total'] ?? 0;
 
+// PostgreSQL-compatible monthly revenue query
 $monthly_query = "SELECT TO_CHAR(date, 'FMMonth') as month, SUM(total_price) as revenue FROM reservations WHERE status = 'confirmed' AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM CURRENT_DATE) GROUP BY TO_CHAR(date, 'FMMonth'), EXTRACT(MONTH FROM date) ORDER BY EXTRACT(MONTH FROM date)";
-$monthly_results = $pdo->query($monthly_query); // <-- This line executes the query!
+$monthly_results = $pdo->query($monthly_query);
 
 $months = []; $revenues = [];
 while($row = $monthly_results->fetch(PDO::FETCH_ASSOC)) { 
@@ -243,7 +244,6 @@ while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
                         <h2 style="color: var(--text-main); margin: 0; font-size: 1.8rem; font-family: 'Cinzel', serif; font-weight: 400;">Business Intelligence</h2>
                         <p style="color: var(--text-sub); font-size: 0.85rem;">Financial tracking & session popularity</p>
                     </div>
-                    <!-- Unified Premium Centered Button -->
                     <button class="btn-gold" onclick="exportToPDF()">📩 Export PDF</button>
                 </div>
 
@@ -274,7 +274,6 @@ while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
     </main>
 
     <script>
-        // --- LIGHT / DARK MODE UI SYNC ---
         const activeTheme = document.documentElement.getAttribute('data-theme') || 'light';
         updateThemeUI(activeTheme);
 
@@ -286,7 +285,6 @@ while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
             localStorage.setItem('theme', newTheme);
             updateThemeUI(newTheme);
             
-            // Re-render chart grid lines dynamically on theme switch
             revenueChart.options.scales.y.grid.color = newTheme === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)';
             revenueChart.update();
         }
@@ -303,7 +301,6 @@ while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
             }
         }
 
-        // TOGGLE MENU SCRIPT
         function togglePremiumMenu(event) {
             event.stopPropagation();
             const menu = document.getElementById('userMenu');
@@ -320,7 +317,6 @@ while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
         }
         window.onclick = function(event) { if (!event.target.closest('.account-dropdown')) { closePremiumMenu(); } }
 
-        // CHART CONFIGURATION
         const revCtx = document.getElementById('revenueChart').getContext('2d');
         const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
         
