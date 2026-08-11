@@ -10,21 +10,17 @@ if (!isset($_SESSION['user_id']) || !isset($_GET['id'])) {
 
 $id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
-
 // 2. Fetch Detailed Reservation Data (Updated to include total_price)
-$stmt = $conn->prepare("SELECT r.*, u.name, u.email 
+$stmt = $pdo->prepare("SELECT r.*, u.name, u.email 
                         FROM reservations r 
                         JOIN users u ON r.user_id = u.id 
                         WHERE r.id = ? AND r.user_id = ?");
-$stmt->bind_param("ii", $id, $user_id);
-$stmt->execute();
-$reservation = $stmt->get_result()->fetch_assoc();
-$stmt->close();
+$stmt->execute([$id, $user_id]);
+$reservation = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$reservation) {
     die("Reservation not found.");
 }
-
 // 3. Status Badge Color Logic - Dynamic adjustment handled via CSS Variables
 $status = strtolower($reservation['status']);
 
