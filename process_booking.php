@@ -60,17 +60,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             throw new Exception("db_error");
         }
 
-        $new_id = $pdo->lastInsertId();
+        $new_id = trim($pdo->lastInsertId());
+        
+        // Ensure absolutely no line breaks can leak into the header string
+        $safe_id = preg_replace('/[\r\n]+/', '', $new_id);
         
         $pdo->commit();
-        header("Location: confirmation.php?id=" . $new_id);
+        header("Location: confirmation.php?id=" . $safe_id);
         exit();
 
     } catch (Exception $e) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
-        header("Location: booking.php?error=" . $e->getMessage());
+        $safe_error = urlencode(trim($e->getMessage()));
+        header("Location: booking.php?error=" . $safe_error);
         exit();
     }
 }
