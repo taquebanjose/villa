@@ -3,7 +3,6 @@ session_start();
 include '../db/connection.php';
 include 'functions.php'; 
 
-// 1. Strict Admin Security Check
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header("Location: ../login.php");
     exit();
@@ -11,50 +10,36 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 $user_id = $_SESSION['user_id'];
 
-// --- FETCH ADMIN DATA (For the Dropdown) ---
 $stmt_admin = $pdo->prepare("SELECT name, image FROM users WHERE id = ?");
 $stmt_admin->execute([$user_id]);
 $admin_data = $stmt_admin->fetch(PDO::FETCH_ASSOC);
-
 $displayName = !empty($admin_data['name']) ? explode(' ', $admin_data['name'])[0] : 'Admin';
 $admin_image = !empty($admin_data['image']) ? '../uploads/' . $admin_data['image'] : null;
 
-// --- REVENUE LOGIC ---
 $stmt_total = $pdo->query("SELECT SUM(total_price) as total FROM reservations WHERE status = 'confirmed'");
 $total_res = $stmt_total->fetch(PDO::FETCH_ASSOC);
 $lifetime_revenue = $total_res['total'] ?? 0;
 
-// PostgreSQL-compatible monthly revenue query
 $monthly_query = "SELECT TO_CHAR(date, 'FMMonth') as month, SUM(total_price) as revenue FROM reservations WHERE status = 'confirmed' AND EXTRACT(YEAR FROM date) = EXTRACT(YEAR FROM CURRENT_DATE) GROUP BY TO_CHAR(date, 'FMMonth'), EXTRACT(MONTH FROM date) ORDER BY EXTRACT(MONTH FROM date)";
 $monthly_results = $pdo->query($monthly_query);
-
 $months = []; $revenues = [];
 while($row = $monthly_results->fetch(PDO::FETCH_ASSOC)) { 
     $months[] = $row['month']; 
     $revenues[] = (float)$row['revenue']; 
 }
 
-// Session breakdown query with distinct matching for Day, Night, and 22 Hours/Day & Night
+// --- TEMPORARY DEBUG QUERY ---
 $session_query = "SELECT specific_time, COUNT(*) as count FROM reservations WHERE status = 'confirmed' GROUP BY specific_time";
 $session_results = $pdo->query($session_query);
-$session_labels = []; $session_counts = [];
-while($row = $session_results->fetch(PDO::FETCH_ASSOC)) {
-    $time_val = strtolower(trim($row['specific_time'] ?? ''));
-    
-    // Check for 'night' first, then combination/22 hours, then standalone 'day'
-    if (strpos($time_val, 'night') !== false && strpos($time_val, 'day') === false) {
-        $label = "🌙 Night";
-    } elseif (strpos($time_val, 'day') !== false && strpos($time_val, 'night') !== false) {
-        $label = "⏳ 22 Hours (Day & Night)";
-    } elseif (strpos($time_val, 'day') !== false) {
-        $label = "☀️ Day";
-    } else {
-        $label = "⏳ 22 Hours";
-    }
-    
-    $session_labels[] = $label; 
-    $session_counts[] = $row['count'];
-}
+$debug_rows = $session_results->fetchAll(PDO::FETCH_ASSOC);
+
+echo "<div style='background: #111; color: #0ff; padding: 40px; font-family: monospace; font-size: 18px; z-index: 999999; position: relative;'>";
+echo "<h3>RAW DATABASE VALUES FOR 'specific_time':</h3>";
+echo "<pre>";
+print_r($debug_rows);
+echo "</pre>";
+echo "</div>";
+exit();
 ?>
 
 <!DOCTYPE html>
