@@ -8,23 +8,22 @@ $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : '
 // --- FETCH USER IMAGE ---
 $user_image = null;
 if ($uid) {
-    /** @var mysqli $conn */
-    $stmt = $conn->prepare("SELECT image FROM users WHERE id = ?");
-    $stmt->bind_param("i", $uid);
-    $stmt->execute();
-    $res = $stmt->get_result()->fetch_assoc();
+    /** @var PDO $pdo */
+    $stmt = $pdo->prepare("SELECT image FROM users WHERE id = ?");
+    $stmt->execute([$uid]);
+    $res = $stmt->fetch(PDO::FETCH_ASSOC);
     $user_image = !empty($res['image']) ? 'uploads/' . $res['image'] : null;
-    $stmt->close();
 }
 
 // --- FETCH GALLERY IMAGES ---
 $gallery_query = "SELECT * FROM gallery ORDER BY uploaded_at DESC";
-$gallery_result = $conn->query($gallery_query);
+$gallery_stmt = $pdo->query($gallery_query);
 
 // Collect images into array
 $gallery_items = [];
-if ($gallery_result && $gallery_result->num_rows > 0) {
-    while ($row = $gallery_result->fetch_assoc()) {
+$rows = $gallery_stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($rows) {
+    foreach ($rows as $row) {
         $gallery_items[] = [
             'src'      => 'uploads/gallery/' . $row['image_path'], // Do not run htmlspecialchars on paths
             'caption'  => htmlspecialchars($row['caption'] ?? '', ENT_QUOTES, 'UTF-8'),
