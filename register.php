@@ -12,33 +12,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($name) || empty($email) || empty($password)) {
         $error = "Please fill in all fields.";
     } else {
-        // Check if email already exists
-        $check = $conn->prepare("SELECT id FROM users WHERE email = ?");
-        $check->bind_param("s", $email);
-        $check->execute();
-        $check->store_result();
+        // Check if email already exists using PDO
+        $check = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $check->execute([$email]);
 
-        if ($check->num_rows > 0) {
+        if ($check->rowCount() > 0) {
             $error = "An account with this email already exists.";
         } else {
-            $check->close();
-
             // Hash password securely
             $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-            $stmt = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $name, $email, $hashed_password);
-
-            if ($stmt->execute()) {
-                $_SESSION['user_id'] = $conn->insert_id;
+            $stmt = $pdo->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+            
+            if ($stmt->execute([$name, $email, $hashed_password])) {
+                $_SESSION['user_id'] = $pdo->lastInsertId();
                 $_SESSION['user_name'] = $name;
-                // Redirect straight to policy page upon successful login
+                // Redirect straight to policy page upon successful registration
                 header("Location: policy.php");
                 exit();
             } else {
                 $error = "Registration failed. Please try again.";
             }
-            $stmt->close();
         }
     }
 }
