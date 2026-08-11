@@ -13,9 +13,7 @@ function logActivity($conn, $action, $details) {
     $admin_name = $_SESSION['name'] ?? 'System';
     
     $stmt = $conn->prepare("INSERT INTO admin_logs (admin_id, admin_name, action_type, details) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("isss", $admin_id, $admin_name, $action, $details);
-    $stmt->execute();
-    $stmt->close();
+    $stmt->execute([$admin_id, $admin_name, $action, $details]);
 }
 
 /**
