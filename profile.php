@@ -10,10 +10,15 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// 2. Fetch Latest User Data (Using PDO)
+// 2. Fetch Latest User Data (Using PDO) & Ensure Role is Captured
 $stmt = $pdo->prepare("SELECT name, email, image, role FROM users WHERE id = ?");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Synchronize session role dynamically if not already set or outdated
+if (isset($user['role'])) {
+    $_SESSION['role'] = $user['role'];
+}
 
 $userName = !empty($user['name']) ? $user['name'] : 'Guest';
 $displayName = explode(' ', $userName)[0];
