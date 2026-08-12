@@ -36,7 +36,6 @@ $room_stmt = $pdo->query("SELECT * FROM rooms_gallery ORDER BY id ASC");
 $room_rows = $room_stmt->fetchAll(PDO::FETCH_ASSOC);
 if ($room_rows) {
     foreach ($room_rows as $row) {
-        // Handles whichever column name your rooms table uses for text/titles safely
         $room_caption = $row['caption'] ?? $row['title'] ?? $row['name'] ?? '';
         
         $gallery_items[] = [
@@ -250,23 +249,6 @@ if ($room_rows) {
 
         .photo-card:hover img { transform: scale(1.06); }
 
-        .photo-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to top, var(--card-hover-bg) 0%, transparent 70%);
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            padding: 20px;
-            text-align: left;
-            opacity: 0;
-            transition: 0.4s ease;
-        }
-
-        .photo-card:hover .photo-overlay { opacity: 1; }
-        .overlay-cat { color: var(--gold-text); font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-        .overlay-cap { color: var(--text-main); font-size: 1rem; margin-top: 5px; font-weight: 600; }
-
         /* --- LIGHTBOX OVERLAY --- */
         #lightbox {
             display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
@@ -422,9 +404,6 @@ if ($room_rows) {
                     ?>
                         <div class="photo-card" onclick="openLightbox(<?= (int)$global_counter ?>)">
                             <img src="<?= htmlspecialchars($photo['src'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Gallery">
-                            <div class="photo-overlay">
-                                <span class="overlay-cat"><?= $photo['category'] ?></span>
-                            </div>
                         </div>
                     <?php 
                         endif;
@@ -455,9 +434,6 @@ if ($room_rows) {
                 ?>
                             <div class="photo-card" onclick="openLightbox(<?= (int)$global_counter ?>)">
                                 <img src="<?= htmlspecialchars($photo['src'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Room">
-                                <div class="photo-overlay">
-                                    <span class="overlay-cat"><?= $photo['category'] ?></span>
-                                </div>
                             </div>
                 <?php 
                         endif;
