@@ -7,8 +7,9 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit("Access Denied: Admin privileges required."); 
 }
 
-// Fetch the last 100 logs
-$result = $conn->query("SELECT * FROM admin_logs ORDER BY created_at DESC LIMIT 100");
+// Fetch the last 100 logs using PDO
+$stmt = $pdo->query("SELECT * FROM admin_logs ORDER BY created_at DESC LIMIT 100");
+$logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -101,8 +102,8 @@ $result = $conn->query("SELECT * FROM admin_logs ORDER BY created_at DESC LIMIT 
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if($result && $result->num_rows > 0): ?>
-                                <?php while($row = $result->fetch_assoc()): 
+                            <?php if(!empty($logs)): ?>
+                                <?php foreach($logs as $row): 
                                     $action = strtolower($row['action_type']);
                                     $actionClass = 'action-default';
                                     
@@ -133,7 +134,7 @@ $result = $conn->query("SELECT * FROM admin_logs ORDER BY created_at DESC LIMIT 
                                         <?= htmlspecialchars($row['details']) ?>
                                     </td>
                                 </tr>
-                                <?php endwhile; ?>
+                                <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
                                     <td colspan="4" style="text-align:center; padding:50px; color:#888;">No activity logs found.</td>

@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'db/connection.php';
+include 'admin/functions.php'; // Included for logging functionality if available
 
 // 1. Security: Only logged-in users can see their own confirmed receipts
 if (!isset($_SESSION['user_id']) || !isset($_GET['id'])) {
@@ -11,11 +12,11 @@ $booking_id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 $display_name = $_SESSION['name'] ?? 'Valued Guest'; 
 
+// Fetch confirmed reservation using PDO
 $query = "SELECT * FROM reservations WHERE id = ? AND user_id = ? AND status = 'confirmed'";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("ii", $booking_id, $user_id);
-$stmt->execute();
-$data = $stmt->get_result()->fetch_assoc();
+$stmt = $pdo->prepare($query);
+$stmt->execute([$booking_id, $user_id]);
+$data = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$data) { 
     die("Booking not found or not yet confirmed by Admin."); 
@@ -204,7 +205,7 @@ if (!$data) {
             </div>
             <div class="info-row">
                 <span class="label">Session:</span>
-                <span class="value"><?= $data['time']; ?></span>
+                <span class="value"><?= htmlspecialchars($data['time']); ?></span>
             </div>
             <div class="info-row">
                 <span class="label">Payment:</span>

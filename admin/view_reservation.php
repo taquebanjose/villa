@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../db/connection.php';
+include 'functions.php'; // Included for logging functionality if available
 
 // Strict Admin Check
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -16,15 +17,14 @@ if (!isset($_GET['id'])) {
 $res_id = $_GET['id'];
 $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : 'Admin';
 
-// Fetch specific reservation details with user info
+// Fetch specific reservation details with user info using PDO
 $sql = "SELECT r.*, u.name as customer_name, u.email as customer_email 
         FROM reservations r 
         JOIN users u ON r.user_id = u.id 
         WHERE r.id = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("i", $res_id);
-$stmt->execute();
-$reservation = $stmt->get_result()->fetch_assoc();
+$stmt = $pdo->prepare($sql);
+$stmt->execute([$res_id]);
+$reservation = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$reservation) {
     header("Location: dashboard.php");
@@ -47,7 +47,7 @@ if (!$reservation) {
             <div class="nav-buttons">
                 <a href="dashboard.php" style="color: #fff; text-decoration: none; font-size: 0.9rem;">← Back to Dashboard</a>
                 <div class="account-dropdown">
-                    <button class="account-toggle" onclick="toggleMenu()">👤 <?= $displayName ?></button>
+                    <button class="account-toggle" onclick="toggleMenu()">👤 <?= htmlspecialchars($displayName) ?></button>
                     <div id="accountMenu" class="account-menu">
                         <a href="../myreservations.php">My Bookings</a>
                         <a href="../logout.php" style="color: #ff4444;">Logout</a>
@@ -82,12 +82,12 @@ if (!$reservation) {
 
                 <div>
                     <label>Payment Method</label>
-                    <div style="color: #fff;"><?= $reservation['payment_type'] ?></div>
+                    <div style="color: #fff;"><?= htmlspecialchars($reservation['payment_type']) ?></div>
                 </div>
 
                 <div>
                     <label>Current Status</label> <br>
-                    <span class="status-pill <?= $reservation['status'] ?>">
+                    <span class="status-pill <?= htmlspecialchars($reservation['status']) ?>">
                         <?= str_replace('_', ' ', strtoupper($reservation['status'])) ?>
                     </span>
                 </div>

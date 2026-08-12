@@ -12,30 +12,27 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 if (isset($_GET['id'])) {
     $id = (int)$_GET['id'];
 
-    // 2. Fetch the guest name and reservation date BEFORE deleting
-    // This allows the log to be specific (e.g., "Deleted John Doe's reservation")
+    // 2. Fetch the guest name and reservation date BEFORE deleting using PDO
     $query = "SELECT u.name, r.date 
               FROM reservations r 
               JOIN users u ON r.user_id = u.id 
               WHERE r.id = ?";
     
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([$id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($row = $result->fetch_assoc()) {
+    if ($row) {
         $guest_name = $row['name'];
         $res_date = date("M d, Y", strtotime($row['date']));
 
-        // 3. Perform the actual deletion
-        $del_stmt = $conn->prepare("DELETE FROM reservations WHERE id = ?");
-        $del_stmt->bind_param("i", $id);
+        // 3. Perform the actual deletion using PDO
+        $del_stmt = $pdo->prepare("DELETE FROM reservations WHERE id = ?");
         
-        if ($del_stmt->execute()) {
+        if ($del_stmt->execute([$id])) {
             // 4. Log the action using your smart logActivity function
             $log_details = "Permanently deleted reservation for $guest_name (Scheduled for $res_date).";
-            logActivity($conn, 'DELETE_RESERVATION', $log_details);
+            logActivity($pdo, 'DELETE_RESERVATION', $log_details);
             
             header("Location: dashboard.php?msg=deleted");
         } else {

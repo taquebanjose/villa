@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : 'Admin';
 $message = "";
 
-// 2. Handle Image Upload
+// 2. Handle Image Upload using PDO
 if (isset($_POST['upload_image'])) {
     $caption = $_POST['caption'] ?? '';
     $category = $_POST['category'] ?? 'General';
@@ -26,9 +26,8 @@ if (isset($_POST['upload_image'])) {
     $allowTypes = array('jpg', 'png', 'jpeg', 'gif');
     if (in_array(strtolower($fileType), $allowTypes)) {
         if (move_uploaded_file($file["tmp_name"], $targetFilePath)) {
-            $stmt = $conn->prepare("INSERT INTO gallery (image_path, caption, category) VALUES (?, ?, ?)");
-            $stmt->bind_param("sss", $fileName, $caption, $category);
-            if ($stmt->execute()) {
+            $stmt = $pdo->prepare("INSERT INTO gallery (image_path, caption, category) VALUES (?, ?, ?)");
+            if ($stmt->execute([$fileName, $caption, $category])) {
                 $message = "✨ Image added to the collection!";
             }
         } else {
@@ -39,21 +38,29 @@ if (isset($_POST['upload_image'])) {
     }
 }
 
-// 3. Handle Image Deletion
+// 3. Handle Image Deletion using PDO
 if (isset($_GET['delete_id'])) {
     $id = (int)$_GET['delete_id'];
-    $res = $conn->query("SELECT image_path FROM gallery WHERE id = $id");
-    if ($row = $res->fetch_assoc()) {
+    $stmt = $pdo->prepare("SELECT image_path FROM gallery WHERE id = ?");
+    $stmt->execute([$id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($row) {
         $fullPath = "../uploads/gallery/" . $row['image_path'];
         if (file_exists($fullPath)) { unlink($fullPath); }
-        $conn->query("DELETE FROM gallery WHERE id = $id");
+        
+        $delStmt = $pdo->prepare("DELETE FROM gallery WHERE id = ?");
+        $delStmt->execute([$id]);
+        
         header("Location: gallery.php?msg=deleted");
         exit();
     }
 }
 
-// 4. Fetch All Images
-$images = $conn->query("SELECT * FROM gallery ORDER BY uploaded_at DESC");
+// 4. Fetch All Images using PDO
+$stmt = $pdo->query("SELECT * FROM gallery ORDER BY uploaded_at DESC");
+$images = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$imageCount = count($images);
 ?>
 
 <!DOCTYPE html>
@@ -172,19 +179,19 @@ $images = $conn->query("SELECT * FROM gallery ORDER BY uploaded_at DESC");
         </div>
 
         <div class="gallery-grid">
-            <?php if ($images->num_rows > 0): ?>
-                <?php while($img = $images->fetch_assoc()): ?>
+            <?php if ($imageCount > 0): ?>
+                <?php foreach($images as $img): ?>
                     <div class="gallery-item">
                         <div class="gallery-img-wrapper">
-                            <span class="category-badge"><?= $img['category'] ?></span>
-                            <img src="../uploads/gallery/<?= $img['image_path'] ?>" alt="Villa Gallery">
+                            <span class="category-badge"><?= htmlspecialchars($img['category']) ?></span>
+                            <img src="../uploads/gallery/<?= htmlspecialchars($img['image_path']) ?>" alt="Villa Gallery">
                         </div>
                         <div class="item-details">
                             <p class="item-caption"><?= htmlspecialchars($img['caption']) ?: 'No caption' ?></p>
                             <a href="?delete_id=<?= $img['id'] ?>" style="color: #ff4444; font-size: 0.7rem; text-decoration: none; font-weight: bold;" onclick="return confirm('Remove this image permanently?')">🗑 Remove Image</a>
                         </div>
                     </div>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             <?php else: ?>
                 <div style="grid-column: span 3; text-align: center; padding: 100px; color: #333;">
                     <p>No photos uploaded yet. Start by adding your first villa shot!</p>

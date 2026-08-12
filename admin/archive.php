@@ -12,21 +12,29 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 $today = date('Y-m-d');
 $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : 'Admin';
 
-// --- NEW: SEARCH LOGIC ---
-$searchTerm = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
+// --- SEARCH LOGIC (Updated to PDO) ---
+$searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// 2. Fetch Archived Reservations with Filter
+// 2. Fetch Archived Reservations with Filter using PDO Prepared Statements
 $query = "SELECT r.id, u.name, r.date, r.status 
           FROM reservations r 
           JOIN users u ON r.user_id = u.id 
           WHERE r.status = 'archived'";
 
+$params = [];
+
 if (!empty($searchTerm)) {
-    $query .= " AND (u.name LIKE '%$searchTerm%' OR r.date LIKE '%$searchTerm%')";
+    $query .= " AND (u.name LIKE ? OR r.date LIKE ?)";
+    $params[] = "%$searchTerm%";
+    $params[] = "%$searchTerm%";
 }
 
 $query .= " ORDER BY r.date DESC";
-$result = $conn->query($query);
+
+$stmt = $pdo->prepare($query);
+$stmt->execute($params);
+$reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$recordCount = count($reservations);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -106,11 +114,12 @@ $result = $conn->query($query);
                 <?php if(!empty($searchTerm)): ?>
                     <a href="archive.php" style="color: #ff4444; text-decoration: none; font-size: 0.8rem;">Clear</a>
                 <?php endif; ?>
-            </header>
+            </form>
+        </header>
 
         <div style="margin-bottom: 10px; display: flex; justify-content: flex-end;">
             <div style="color: #333; font-size: 0.8rem; font-weight: bold; background: rgba(255,255,255,0.02); padding: 5px 15px; border-radius: 10px;">
-                RECORDS FOUND: <?= $result->num_rows ?>
+                RECORDS FOUND: <?= $recordCount ?>
             </div>
         </div>
 
@@ -124,8 +133,8 @@ $result = $conn->query($query);
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if ($result->num_rows > 0): ?>
-                        <?php while ($row = $result->fetch_assoc()): ?>
+                    <?php if ($recordCount > 0): ?>
+                        <?php foreach ($reservations as $row): ?>
                         <tr style="border-top: 1px solid rgba(255,255,255,0.03);">
                             <td style="padding: 20px; color: #aaa;"><strong><?= htmlspecialchars($row['name']) ?></strong></td>
                             <td style="color: #888;"><?= formatResortDate($row['date']) ?></td>
@@ -139,7 +148,7 @@ $result = $conn->query($query);
                                 ?>
                             </td>
                         </tr>
-                        <?php endwhile; ?>
+                        <?php endforeach; ?>
                     <?php else: ?>
                         <tr>
                             <td colspan="3" style="text-align: center; padding: 40px; color: #444;">No records match your search.</td>

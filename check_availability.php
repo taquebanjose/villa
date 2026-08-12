@@ -13,14 +13,12 @@ $availability = [
 ];
 
 if (!empty($date)) {
-    // Fetch all active/approved bookings for the specified date
-    $stmt = $conn->prepare("SELECT session_type FROM bookings WHERE booking_date = ? AND status != 'cancelled'");
-    $stmt->bind_param("s", $date);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
+    // Fetch all active/approved bookings for the specified date using PDO
+    $stmt = $pdo->prepare("SELECT session_type FROM bookings WHERE booking_date = ? AND status != 'cancelled'");
+    $stmt->execute([$date]);
+    
     $booked_sessions = [];
-    while ($row = $result->fetch_assoc()) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $booked_sessions[] = $row['session_type'];
     }
 

@@ -12,10 +12,9 @@ if (isset($_GET['id'])) {
     $res_id = $_GET['id'];
     $action = ($_GET['action'] === 'restore') ? 0 : 1;
 
-    // 2. Update the archive status
-    $stmt = $conn->prepare("UPDATE reservations SET is_archived = ? WHERE id = ?");
-    $stmt->bind_param("ii", $action, $res_id);
-    $stmt->execute();
+    // 2. Update the archive status (Fixed to use $pdo and array execution)
+    $stmt = $pdo->prepare("UPDATE reservations SET is_archived = ? WHERE id = ?");
+    $stmt->execute([$action, $res_id]);
 }
 
 // 3. Go back to the dashboard

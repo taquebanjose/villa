@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../db/connection.php';
+include 'functions.php'; // Included to ensure access to helper functions like logActivity if needed
 
 // 1. SECURITY: Admin Only
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -8,29 +9,43 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// 2. LOGIC: Handle "Approve Cancellation"
+// 2. LOGIC: Handle "Approve Cancellation" using PDO
 if (isset($_GET['confirm_cancel_id'])) {
     $confirm_id = (int)$_GET['confirm_cancel_id'];
-    $stmt = $conn->prepare("UPDATE reservations SET status = 'cancelled' WHERE id = ? AND status = 'pending_cancel'");
-    $stmt->bind_param("i", $confirm_id);
-    if ($stmt->execute()) {
-        $stmt->close();
+    
+    // Optional: Fetch guest name/date for logging if logActivity is available
+    $stmt = $pdo->prepare("SELECT u.name, r.date FROM reservations r JOIN users u ON r.user_id = u.id WHERE r.id = ?");
+    $stmt->execute([$confirm_id]);
+    $resData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $update_stmt = $pdo->prepare("UPDATE reservations SET status = 'cancelled' WHERE id = ? AND status = 'pending_cancel'");
+    if ($update_stmt->execute([$confirm_id])) {
+        if ($resData && function_exists('logActivity')) {
+            $guest_name = $resData['name'];
+            $res_date = date("M d, Y", strtotime($resData['date']));
+            logActivity($pdo, 'APPROVE_CANCELLATION', "Approved cancellation for $guest_name (Scheduled for $res_date).");
+        }
         header("Location: reservations.php?msg=cancelled"); 
         exit();
     }
 }
 
-// 3. FILTERING
+// 3. FILTERING using PDO
 $filter = isset($_GET['filter']) ? $_GET['filter'] : 'all';
 $query = "SELECT r.id, u.name, r.date, r.time, r.payment_type, r.status 
           FROM reservations r 
           JOIN users u ON r.user_id = u.id";
 
 if ($filter !== 'all') {
-    $query .= " WHERE r.status = '" . $conn->real_escape_string($filter) . "'";
+    $query .= " WHERE r.status = ?";
+    $query .= " ORDER BY r.date DESC";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute([$filter]);
+} else {
+    $query .= " ORDER BY r.date DESC";
+    $stmt = $pdo->query($query);
 }
-$query .= " ORDER BY r.date DESC";
-$result = $conn->query($query);
+$reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : 'Admin';
 ?>
@@ -70,7 +85,7 @@ $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : '
             <div class="nav-buttons">
                 <a href="dashboard.php" style="color: #fff; text-decoration: none; font-size: 0.9rem; margin-right: 15px;">← Dashboard</a>
                 <div class="account-dropdown">
-                    <button class="account-toggle" onclick="toggleMenu()">👤 <?= $displayName ?></button>
+                    <button class="account-toggle" onclick="toggleMenu()">👤 <?= htmlspecialchars($displayName) ?></button>
                     <div id="accountMenu" class="account-menu">
                         <a href="../logout.php" style="color: #ff4444;">Logout</a>
                     </div>
@@ -120,8 +135,8 @@ $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : '
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if ($result->num_rows > 0): ?>
-                            <?php while ($row = $result->fetch_assoc()): ?>
+                        <?php if (count($reservations) > 0): ?>
+                            <?php foreach ($reservations as $row): ?>
                             <tr>
                                 <td><strong><?= htmlspecialchars($row['name']) ?></strong></td>
                                 <td style="color: #fff;"><?= date("M d, Y", strtotime($row['date'])) ?></td>
@@ -132,7 +147,7 @@ $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : '
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="status-pill <?= $row['status'] ?>">
+                                    <span class="status-pill <?= htmlspecialchars($row['status']) ?>">
                                         <?= str_replace('_', ' ', strtoupper($row['status'])) ?>
                                     </span>
                                 </td>
@@ -151,7 +166,7 @@ $displayName = isset($_SESSION['name']) ? explode(' ', $_SESSION['name'])[0] : '
                                     <?php endif; ?>
                                 </td>
                             </tr>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         <?php else: ?>
                             <tr><td colspan="6" style="padding: 50px; color: rgba(255,255,255,0.2);">No matching records.</td></tr>
                         <?php endif; ?>

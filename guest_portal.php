@@ -1,6 +1,7 @@
 <?php
 session_start();
 include 'db/connection.php';
+include 'admin/functions.php'; // Included for logging functionality if available
 
 // 1. Security: Redirect to login if session is not active
 if (!isset($_SESSION['user_id'])) {
@@ -11,21 +12,19 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 $user_name = $_SESSION['user_name'] ?? 'Guest';
 
-// 2. Fetch User's Reservations
+// 2. Fetch User's Reservations using PDO
 $query = "SELECT * FROM reservations WHERE user_id = ? ORDER BY date DESC";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt = $pdo->prepare($query);
+$stmt->execute([$user_id]);
+$reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 3. Fetch the closest upcoming confirmed reservation for the timer
+// 3. Fetch the closest upcoming confirmed reservation for the timer using PDO
 $upcoming_query = "SELECT date, time FROM reservations 
                   WHERE user_id = ? AND date >= CURDATE() AND status = 'confirmed' 
                   ORDER BY date ASC LIMIT 1";
-$up_stmt = $conn->prepare($upcoming_query);
-$up_stmt->bind_param("i", $user_id);
-$up_stmt->execute();
-$upcoming = $up_stmt->get_result()->fetch_assoc();
+$up_stmt = $pdo->prepare($upcoming_query);
+$up_stmt->execute([$user_id]);
+$upcoming = $up_stmt->fetch(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -113,7 +112,7 @@ $upcoming = $up_stmt->get_result()->fetch_assoc();
     <div class="timer-card">
         <div>
             <h3 style="margin: 0; color: #fff;">Your Next Stay</h3>
-            <p style="color: #888; margin-top: 5px;"><?php echo date("F j, Y", strtotime($upcoming['date'])); ?> (<?php echo $upcoming['time']; ?>)</p>
+            <p style="color: #888; margin-top: 5px;"><?php echo date("F j, Y", strtotime($upcoming['date'])); ?> (<?php echo htmlspecialchars($upcoming['time']); ?>)</p>
         </div>
         <div class="countdown-display">
             <div class="time-unit"><span id="days">00</span><label>Days</label></div>
@@ -137,27 +136,31 @@ $upcoming = $up_stmt->get_result()->fetch_assoc();
                     </tr>
                 </thead>
                 <tbody>
-                    <?php while($row = $result->fetch_assoc()): ?>
-                    <tr>
-                        <td style="color: #666; font-family: monospace;">#VM-<?php echo $row['id']; ?></td>
-                        <td><strong><?php echo date("M d, Y", strtotime($row['date'])); ?></strong></td>
-                        <td><?php echo $row['time']; ?></td>
-                        <td>
-                            <span class="status-pill <?php echo strtolower($row['status']); ?>">
-                                <?php echo ucfirst($row['status']); ?>
-                            </span>
-                        </td>
-                        <td>
-                            <?php if(strtolower($row['status']) == 'confirmed'): ?>
-                                <a href="print_receipt.php?id=<?php echo $row['id']; ?>" target="_blank" class="print-link">
-                                    🖨️ Print Receipt
-                                </a>
-                            <?php else: ?>
-                                <span style="color: #444; font-size: 0.85rem;">Pending Approval</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
+                    <?php if (count($reservations) > 0): ?>
+                        <?php foreach($reservations as $row): ?>
+                        <tr>
+                            <td style="color: #666; font-family: monospace;">#VM-<?php echo $row['id']; ?></td>
+                            <td><strong><?php echo date("M d, Y", strtotime($row['date'])); ?></strong></td>
+                            <td><?php echo htmlspecialchars($row['time']); ?></td>
+                            <td>
+                                <span class="status-pill <?php echo strtolower($row['status']); ?>">
+                                    <?php echo ucfirst($row['status']); ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php if(strtolower($row['status']) == 'confirmed'): ?>
+                                    <a href="print_receipt.php?id=<?php echo $row['id']; ?>" target="_blank" class="print-link">
+                                        🖨️ Print Receipt
+                                    </a>
+                                <?php else: ?>
+                                    <span style="color: #444; font-size: 0.85rem;">Pending Approval</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr><td colspan="5" style="padding: 50px; color: rgba(255,255,255,0.2);">No booking records found.</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
