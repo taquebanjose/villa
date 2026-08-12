@@ -15,12 +15,11 @@ if ($uid) {
     $user_image = !empty($res['image']) ? 'uploads/' . $res['image'] : null;
 }
 
-// --- FETCH GALLERY IMAGES ---
-$gallery_query = "SELECT * FROM gallery ORDER BY uploaded_at DESC";
-$gallery_stmt = $pdo->query($gallery_query);
-
-// Collect images into array
+// Collect all gallery items into a single array for unified lightbox support
 $gallery_items = [];
+
+// --- FETCH VILLA GALLERY IMAGES ---
+$gallery_stmt = $pdo->query("SELECT * FROM gallery ORDER BY uploaded_at DESC");
 $rows = $gallery_stmt->fetchAll(PDO::FETCH_ASSOC);
 if ($rows) {
     foreach ($rows as $row) {
@@ -28,6 +27,19 @@ if ($rows) {
             'src'      => 'uploads/gallery/' . rawurlencode($row['image_path']), 
             'caption'  => htmlspecialchars($row['caption'] ?? '', ENT_QUOTES, 'UTF-8'),
             'category' => htmlspecialchars($row['category'] ?? '', ENT_QUOTES, 'UTF-8')
+        ];
+    }
+}
+
+// --- FETCH ROOM COLLECTION IMAGES ---
+$room_stmt = $pdo->query("SELECT * FROM rooms_gallery ORDER BY id ASC");
+$room_rows = $room_stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($room_rows) {
+    foreach ($room_rows as $row) {
+        $gallery_items[] = [
+            'src'      => 'uploads/gallery/' . rawurlencode($row['image_path']),
+            'caption'  => htmlspecialchars($row['title'] ?? 'Villa Room', ENT_QUOTES, 'UTF-8'),
+            'category' => 'The Stay Experience'
         ];
     }
 }
@@ -400,46 +412,64 @@ if ($rows) {
             
             <div class="photo-scroller">
                 <?php if (!empty($gallery_items)): ?>
-                    <?php foreach ($gallery_items as $counter => $photo): ?>
-                        <div class="photo-card" onclick="openLightbox(<?= (int)$counter ?>)">
+                    <?php 
+                    $global_counter = 0;
+                    foreach ($gallery_items as $photo): 
+                        if ($photo['category'] !== 'The Stay Experience'):
+                    ?>
+                        <div class="photo-card" onclick="openLightbox(<?= (int)$global_counter ?>)">
                             <img src="<?= htmlspecialchars($photo['src'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Gallery">
                             <div class="photo-overlay">
                                 <span class="overlay-cat"><?= $photo['category'] ?></span>
                                 <h4 class="overlay-cap"><?= $photo['caption'] ?></h4>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+                    <?php 
+                        endif;
+                        $global_counter++;
+                    endforeach; 
+                    ?>
                 <?php else: ?>
                     <p style="color: var(--text-sub); text-align: center; width: 100%; font-size: 0.9rem;">New photos coming soon!</p>
                 <?php endif; ?>
             </div>
         </section>
-<!-- The Room Collection Showcase -->
-<section class="gallery-section" style="margin-top: 40px;">
-    <div class="gallery-header">
-        <span class="gallery-badge">The Stay Experience</span>
-        <h2 style="color: var(--text-main); font-family: 'Cinzel', serif; font-size: 2.2rem; margin-top: 10px; font-weight: 400; letter-spacing: 1px;">The Room Collection</h2>
-    </div>
 
-    <div class="photo-scroller">
-        <?php
-        $room_stmt = $pdo->query("SELECT * FROM rooms_gallery ORDER BY id ASC");
-        $room_items = $room_stmt->fetchAll(PDO::FETCH_ASSOC);
+        <!-- The Room Collection Showcase -->
+        <section class="gallery-section" style="margin-top: 40px;">
+            <div class="gallery-header">
+                <span class="gallery-badge">The Stay Experience</span>
+                <h2 style="color: var(--text-main); font-family: 'Cinzel', serif; font-size: 2.2rem; margin-top: 10px; font-weight: 400; letter-spacing: 1px;">The Room Collection</h2>
+            </div>
 
-        if (!empty($room_items)):
-            foreach ($room_items as $counter => $room):
-        ?>
-                <div class="photo-card" onclick="openLightbox(<?= (int)$counter ?>)">
-                    <img src="uploads/gallery/<?= htmlspecialchars($room['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Room">
-                </div>
-        <?php 
-            endforeach; 
-        else: 
-        ?>
-            <p style="color: var(--text-sub); text-align: center; width: 100%; font-size: 0.9rem;">New rooms coming soon!</p>
-        <?php endif; ?>
-    </div>
-</section>
+            <div class="photo-scroller">
+                <?php 
+                $has_rooms = false;
+                if (!empty($gallery_items)):
+                    $global_counter = 0;
+                    foreach ($gallery_items as $photo):
+                        if ($photo['category'] === 'The Stay Experience'):
+                            $has_rooms = true;
+                ?>
+                            <div class="photo-card" onclick="openLightbox(<?= (int)$global_counter ?>)">
+                                <img src="<?= htmlspecialchars($photo['src'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Room">
+                                <div class="photo-overlay">
+                                    <span class="overlay-cat"><?= $photo['category'] ?></span>
+                                    <h4 class="overlay-cap"><?= $photo['caption'] ?></h4>
+                                </div>
+                            </div>
+                <?php 
+                        endif;
+                        $global_counter++;
+                    endforeach;
+                endif;
+                
+                if (!$has_rooms): 
+                ?>
+                    <p style="color: var(--text-sub); text-align: center; width: 100%; font-size: 0.9rem;">New rooms coming soon!</p>
+                <?php endif; ?>
+            </div>
+        </section>
     </main>
 
     <div id="lightbox">
