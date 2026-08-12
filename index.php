@@ -414,6 +414,37 @@ if ($rows) {
                 <?php endif; ?>
             </div>
         </section>
+        <!-- The Room Collection Showcase -->
+<section class="gallery-section" style="margin-top: 40px;">
+    <div class="gallery-header">
+        <span class="gallery-badge">The Stay Experience</span>
+        <h2 style="color: var(--text-main); font-family: 'Cinzel', serif; font-size: 2.2rem; margin-top: 10px; font-weight: 400; letter-spacing: 1px;">The Room Collection</h2>
+    </div>
+
+    <div class="photo-scroller">
+        <?php
+        // Fetch room images from the PostgreSQL rooms_gallery table
+        $room_stmt = $pdo->query("SELECT * FROM rooms_gallery ORDER BY id ASC");
+        $room_items = $room_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!empty($room_items)):
+            foreach ($room_items as $counter => $room):
+        ?>
+                <div class="photo-card" onclick="openLightbox(<?= (int)$counter ?>)">
+                    <img src="uploads/gallery/<?= htmlspecialchars($room['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Room">
+                    <div class="photo-overlay">
+                        <span class="overlay-cat">Room</span>
+                        <h4 class="overlay-cap"></h4>
+                    </div>
+                </div>
+        <?php 
+            endforeach; 
+        else: 
+        ?>
+            <p style="color: var(--text-sub); text-align: center; width: 100%; font-size: 0.9rem;">New rooms coming soon!</p>
+        <?php endif; ?>
+    </div>
+</section>
     </main>
 
     <div id="lightbox">
