@@ -427,9 +427,9 @@ if ($rows) {
         $room_items = $room_stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (!empty($room_items)):
-            foreach ($room_items as $room):
+            foreach ($room_items as $counter => $room):
         ?>
-                <div class="photo-card">
+                <div class="photo-card" onclick="openLightbox(<?= (int)$counter ?>)">
                     <img src="uploads/gallery/<?= htmlspecialchars($room['image_path'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Room">
                 </div>
         <?php 
