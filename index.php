@@ -36,8 +36,12 @@ $room_stmt = $pdo->query("SELECT * FROM rooms_gallery ORDER BY id ASC");
 $room_rows = $room_stmt->fetchAll(PDO::FETCH_ASSOC);
 if ($room_rows) {
     foreach ($room_rows as $row) {
+        // Handles whichever column name your rooms table uses for text/titles safely
+        $room_caption = $row['caption'] ?? $row['title'] ?? $row['name'] ?? '';
+        
         $gallery_items[] = [
             'src'      => 'uploads/gallery/' . rawurlencode($row['image_path']),
+            'caption'  => htmlspecialchars($room_caption, ENT_QUOTES, 'UTF-8'),
             'category' => 'The Stay Experience'
         ];
     }
@@ -420,7 +424,6 @@ if ($room_rows) {
                             <img src="<?= htmlspecialchars($photo['src'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Gallery">
                             <div class="photo-overlay">
                                 <span class="overlay-cat"><?= $photo['category'] ?></span>
-                                <h4 class="overlay-cap"><?= $photo['caption'] ?></h4>
                             </div>
                         </div>
                     <?php 
@@ -454,7 +457,6 @@ if ($room_rows) {
                                 <img src="<?= htmlspecialchars($photo['src'], ENT_QUOTES, 'UTF-8') ?>" alt="Villa Room">
                                 <div class="photo-overlay">
                                     <span class="overlay-cat"><?= $photo['category'] ?></span>
-                                    <h4 class="overlay-cap"><?= $photo['caption'] ?></h4>
                                 </div>
                             </div>
                 <?php 
