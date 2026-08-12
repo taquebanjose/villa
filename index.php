@@ -38,7 +38,6 @@ if ($room_rows) {
     foreach ($room_rows as $row) {
         $gallery_items[] = [
             'src'      => 'uploads/gallery/' . rawurlencode($row['image_path']),
-            'caption'  => htmlspecialchars($row['title'] ?? 'Villa Room', ENT_QUOTES, 'UTF-8'),
             'category' => 'The Stay Experience'
         ];
     }
